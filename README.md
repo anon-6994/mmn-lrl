@@ -1,2 +1,2 @@
 # mmn
-Modulatory masking networks for lifelong reinforcement learning
+Code for Lifelong Reinforcement Learning with Modulatory Mask. Code to be uploaded soon.
