@@ -1,0 +1,54 @@
+# CT8
+# ppo
+python train_ctgraph.py baseline --seed 86 --env_config_path env_configs/ct8.json --exp_id ct8
+
+# mask ri
+ python train_ctgraph.py ll_supermask --new_task_mask random --seed 86 --env_config_path env_configs/ct8.json --exp_id ct8
+
+# mask lc (runs as mask blc in exp_maskblc branch)
+python train_ctgraph.py ll_supermask --new_task_mask linear_comb --seed 86 --env_config_path env_configs/ct8.json --exp_id ct8
+
+
+# CT12
+# ppo
+python train_ctgraph.py baseline --seed 86 --env_config_path env_configs/ct12.json --exp_id ct12
+
+# mask ri
+python train_ctgraph.py ll_supermask --new_task_mask random --seed 86 --env_config_path env_configs/ct12.json --exp_id ct12
+
+# mask lc (runs as mask blc in exp_maskblc branch)
+python train_ctgraph.py ll_supermask --new_task_mask linear_comb --seed 86 --env_config_path env_configs/ct12.json --exp_id ct12
+
+
+# CT8 MULTI DEPTH
+# ppo
+python train_ctgraph.py baseline --seed 86 --env_config_path env_configs/ct8_md.json --exp_id ct8md
+
+# mask ri
+python train_ctgraph.py ll_supermask --new_task_mask random --seed 86 --env_config_path env_configs/ct8_md.json --exp_id ct8md
+
+# mask lc (runs as mask blc in exp_maskblc branch)
+python train_ctgraph.py ll_supermask --new_task_mask linear_comb --seed 86 --env_config_path env_configs/ct8_md.json --exp_id ct8md
+
+
+# MG10
+# ppo
+python train_minigrid.py baseline --seed 86
+
+# mask ri
+python train_minigrid.py ll_supermask --new_task_mask random --seed 86
+
+# mask lc (runs as mask blc in exp_maskblc branch)
+python train_minigrid.py ll_supermask --new_task_mask linear_comb --seed 86
+
+
+#CW10
+# ppo
+python train_continualworld.py baseline --seed 436
+
+# mask ri (for continuous values mask setup). For binary mask, run the command in ‘exp_maskri_discrete_mask_cw10’ branch
+python train_continualworld.py ll_supermask --new_task_mask random --seed 436
+
+# mask lc (for continuous values mask setup). (runs as mask blc in exp_maskblc branch)
+# *no need* to run this in ‘exp_maskri_discrete_mask_cw10’ branch
+python train_continualworld.py ll_supermask --new_task_mask linear_comb --seed 436

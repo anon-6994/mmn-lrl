@@ -1,0 +1,8 @@
+{
+"config_paths": ["./ctgraph_env_config/ctgraph_d2_imgseed1_pomdp_wait.json", "./ctgraph_env_config/ctgraph_d3_imgseed1_pomdp_wait.json", "./ctgraph_env_config/ctgraph_d4_imgseed1_pomdp_wait.json", "./ctgraph_env_config/ctgraph_d5_imgseed1_pomdp_wait.json"],
+"task_order": "default",
+"one_hot": true,
+"label_dim": 60,
+"num_tasks": 8,
+"filter_tasks": [0, 1, 4, 5, 12, 13, 28, 29]
+}

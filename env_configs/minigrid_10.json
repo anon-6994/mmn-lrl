@@ -1,0 +1,7 @@
+{
+"tasks": ["MiniGrid-SimpleCrossingS9N1-v0", "MiniGrid-SimpleCrossingS9N1-v0", "MiniGrid-SimpleCrossingS9N2-v0", "MiniGrid-SimpleCrossingS9N2-v0", "MiniGrid-SimpleCrossingS9N3-v0", "MiniGrid-SimpleCrossingS9N3-v0", "MiniGrid-LavaCrossingS9N1-v0", "MiniGrid-LavaCrossingS9N1-v0", "MiniGrid-LavaCrossingS9N2-v0", "MiniGrid-LavaCrossingS9N2-v0"],
+"one_hot": true,
+"label_dim": 10,
+"action_dim": 3,
+"seeds": [860, 861, 860, 861, 860, 861, 860, 861, 860, 861]
+}

@@ -1,0 +1,30 @@
+{ "general_seed" : 3,
+  "graph_shape": {
+    "depth": 2,
+    "branching_factor": 2,
+    "wait_prob": 0.0
+  },
+  "reward": {
+    "high_reward_value": 1.0,
+    "crash_reward_value": 0.0,
+    "stochastic_sampling": false,
+    "reward_std": 0.1,
+    "min_static_reward_episodes": 0,
+    "max_static_reward_episodes": 0,
+    "reward_distribution": "needle_in_haystack"
+  },
+  "observations": {
+    "MDP_decision_s": true,
+    "MDP_wait_s": true,
+    "wait_states": [2,8],
+    "decision_states": [9,11],
+    "graph_ends": [12,15]
+  },
+  "image_dataset": {
+    "seed": 2,
+    "1D": false,
+    "nr_of_images": 16,
+    "noise_on_images_on_read": 0,
+    "small_rotation_on_read": 1
+  }
+}

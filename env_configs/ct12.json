@@ -1,0 +1,7 @@
+{
+"config_paths": ["./ctgraph_env_config/ctgraph_d2_imgseed1_pomdp_wait.json", "./ctgraph_env_config/ctgraph_d3_imgseed1_pomdp_wait.json"],
+"task_order": "interleaved",
+"one_hot": true,
+"label_dim": 12,
+"num_tasks": 12
+}

@@ -1,0 +1,6 @@
+{
+"tasks": ["hammer-v2", "push-wall-v2", "faucet-close-v2", "push-back-v2", "stick-pull-v2", "handle-press-side-v2", "push-v2", "shelf-place-v2", "window-close-v2", "peg-unplug-side-v2"],
+"one_hot": true,
+"label_dim": 10,
+"randomization": "deterministic"
+}
