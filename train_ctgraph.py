@@ -106,7 +106,7 @@ def ppo_ll_mctgraph(name, args):
     config.cl_preservation = 'supermask'
     config.seed = args.seed
     random_seed(config.seed)
-    exp_id = '-{0}-mask-{1}-{2}'.format(config.seed, args.new_task_mask, args.exp_id)
+    exp_id = '-{0}-mask-{1}-{2}-tlc'.format(config.seed, args.new_task_mask, args.exp_id)
     log_name = name + '-ppo' + '-' + config.cl_preservation + exp_id
     config.log_dir = get_default_log_dir(log_name)
     config.num_workers = 4

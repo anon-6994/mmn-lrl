@@ -185,7 +185,15 @@ class MultitaskMaskLinear(nn.Linear):
         if self.new_mask_type == NEW_MASK_LINEAR_COMB and new_task:
             if task > 0:
                 k = task + 1
-                self.betas.data[task, 0:k] = 1. / k
+                # set the coeff for the new task to a fixed starting value of 0.25.
+                # this is set to 0.25 for now. The remaining prob are shared equally
+                # by previous task masks.
+                threshold_ = 0.5
+                remain_prob = 1. - threshold_
+                self.betas.data[task, k-1] = threshold_
+                self.betas.data[task, 0:k-1] = remain_prob / (k-1)
+
+                self.betas.data[task, 0:k] = torch.log(self.betas.data[task, 0:k])
                 #print(self.betas)
 
 # Subnetwork forward from hidden networks
@@ -381,7 +389,16 @@ class MultitaskMaskLinearSparse(nn.Linear):
         if self.new_mask_type == NEW_MASK_LINEAR_COMB and new_task:
             if task > 0:
                 k = task + 1
-                self.betas.data[task, 0:k] = 1. / k
+                # set the coeff for the new task to a fixed starting value of 0.25.
+                # this is set to 0.25 for now. The remaining prob are shared equally
+                # by previous task masks.
+                threshold_ = 0.5
+                remain_prob = 1. - threshold_
+                self.betas.data[task, k-1] = threshold_
+                self.betas.data[task, 0:k-1] = remain_prob / (k-1)
+
+                self.betas.data[task, 0:k] = torch.log(self.betas.data[task, 0:k])
+                #print(self.betas)
 
 # Utility functions
 def set_model_task(model, task, verbose=False, new_task=False):

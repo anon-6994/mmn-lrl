@@ -370,13 +370,10 @@ def ppo_ll_mctgraph(name, args):
         # for new task to be analysed is only solved by MASK LC
         _tmp_name = os.path.basename(args.env_config_path)
         if _tmp_name == 'meta_ctgraph_d2_3_4_5.json':
-            if args.algo == 'll_supermask' and args.new_task_mask == 'linear_comb':
-                ret_optimal = ret
-                with open('./log/data_{0}.bin'.format(os.path.basename(args.env_config_path)),'wb') as f:
-                    pickle.dump(ret, f)
-            else:
-                with open('./log/data_{0}.bin'.format(os.path.basename(args.env_config_path)),'rb') as f:
-                    ret_optimal = pickle.load(f)
+            # this means mask lc ('linear_comb') in paper_mask_composition_v4 should have been
+            # run first before running this mask tlc (which is also 'linear_comb' in args.new_task_mask)
+            with open('./log/data_{0}.bin'.format(os.path.basename(args.env_config_path)),'rb') as f:
+                ret_optimal = pickle.load(f)
 
     ##### Analysis 4: Targeted exploration
     # targeted exploration for new task (the next task, after seen tasks, in the curriculum)
@@ -431,7 +428,7 @@ def ppo_ll_mctgraph(name, args):
             title = 'Task {0}; previously learnt mask'.format(task_idx)
             fname = 'task_{0}_already_learnt'.format(task_idx)
         elif task_idx == new_task_idx:
-            mask_type = 'MASK RI'  if args.new_task_mask == 'random' else 'MASK LC'
+            mask_type = 'MASK RI'  if args.new_task_mask == 'random' else 'MASK TLC'
             title = 'Task {0} (new task); {1}'.format(task_idx, mask_type)
             fname = 'task_{0}_new'.format(task_idx)
         else:

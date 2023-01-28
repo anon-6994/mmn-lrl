@@ -420,7 +420,7 @@ def ppo_ll_minigrid(name, args):
             title = 'Task {0}; previously learnt mask'.format(task_idx)
             fname = 'task_{0}_already_learnt'.format(task_idx)
         elif task_idx == new_task_idx:
-            mask_type = 'MASK RI'  if args.new_task_mask == 'random' else 'MASK LC'
+            mask_type = 'MASK RI'  if args.new_task_mask == 'random' else 'MASK TLC'
             title = 'Task {0} (new task); {1}'.format(task_idx, mask_type)
             fname = 'task_{0}_new'.format(task_idx)
         else:
