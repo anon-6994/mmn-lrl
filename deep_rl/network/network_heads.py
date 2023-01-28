@@ -246,7 +246,7 @@ class GaussianActorCriticNet_SS(nn.Module, BaseNet):
                  new_task_mask='random'):
         super(GaussianActorCriticNet_SS, self).__init__()
         # continuous values mask is used for Gaussian (continuous control policies)
-        discrete_mask = False
+        discrete_mask = True
         self.network = ActorCriticNetSS(state_dim, action_dim, phi_body, actor_body, critic_body, \
             num_tasks, new_task_mask, discrete_mask=discrete_mask)
         self.task_label_dim = task_label_dim
