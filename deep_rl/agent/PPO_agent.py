@@ -423,3 +423,225 @@ class LLAgent(PPOContinualLearnerAgent):
             set_model_task(self.network, task_idx)
         return
 
+from copy import deepcopy
+class LLAgentEWC(PPOContinualLearnerAgent):
+    '''
+    PPO continual learning agent baseline (experience catastrophic forgetting)
+    '''
+    def __init__(self, config):
+        PPOContinualLearnerAgent.__init__(self, config)
+        self.seen_tasks = {} # contains task labels that agent has experienced so far.
+        self.new_task = False
+        self.curr_train_task_label = None
+
+        #self.ewc_data_buffer = IterableReplay(memory_size=int(1024)) # for ctgraph
+        #self.ewc_data_buffer = IterableReplay(memory_size=int(65536)) # for minigrid
+        self.ewc_data_buffer = IterableReplay(memory_size=int(5e5)) # for continualworld
+
+        self.params = {n: p for n, p in self.network.named_parameters() if p.requires_grad}
+        self.precision_matrices = {}
+        self.means = {}
+        for n, p in deepcopy(self.params).items():
+            p.data.zero_()
+            self.precision_matrices[n] = p.data.to(config.DEVICE)
+        for n, p in deepcopy(self.params).items():
+            p.data.zero_()
+            self.means[n] = p.data.to(config.DEVICE)
+
+    def penalty(self):
+        loss = 0
+        for n, p in self.network.named_parameters():
+            _loss = self.precision_matrices[n].detach() * (p - self.means[n].detach()) ** 2
+            loss += _loss.sum()
+        return loss * self.config.cl_loss_coeff
+
+    def task_train_start(self, task_label):
+        self.curr_train_task_label = task_label
+        return
+
+    def task_train_end(self):
+        ret = self.consolidate()
+        self.ewc_data_buffer.clear()
+        self.curr_train_task_label = None
+        return ret
+
+    def task_eval_start(self, task_label):
+        self.curr_eval_task_label = task_label
+        return
+
+    def task_eval_end(self):
+        self.curr_eval_task_label = None
+        return
+
+    def consolidate(self):
+        config = self.config
+        precision_matrices = {}
+        for n, p in deepcopy(self.params).items():
+            p.data.zero_()
+            precision_matrices[n] = p.data.to(config.DEVICE)
+
+        # Set the model in the evaluation mode
+        self.network.eval()
+
+        if self.curr_train_task_label is not None:
+            task_label = self.curr_train_task_label
+        else:
+            task_label = self.task.get_task()['task_label']
+            assert False, 'manually set (temporary) breakpoint. code should not get here.'
+        task_label = tensor(task_label)
+
+        for processed_rollout in self.ewc_data_buffer:
+            states, actions, log_probs_old, returns, advantages=map(lambda x: torch.cat(x, dim=0), \
+                zip(*processed_rollout))
+            eps = 1e-6
+            advantages = (advantages - advantages.mean()) / (advantages.std() + eps)
+
+            batcher = Batcher(states.size(0) // config.num_mini_batches, [np.arange(states.size(0))])
+            batcher.shuffle()
+            while not batcher.end():
+                batch_indices = batcher.next_batch()[0]
+                batch_indices = tensor(batch_indices).long()
+                sampled_states = states[batch_indices]
+                sampled_actions = actions[batch_indices]
+                sampled_log_probs_old = log_probs_old[batch_indices]
+                sampled_returns = returns[batch_indices]
+                sampled_advantages = advantages[batch_indices]
+
+                batch_dim = sampled_states.shape[0]
+                batch_task_label = torch.repeat_interleave(task_label.reshape(1, -1), batch_dim, \
+                    dim=0)
+                _, _, log_probs, entropy_loss, values, outs = self.network.predict(sampled_states, \
+                    sampled_actions, task_label=batch_task_label, return_layer_output=True)
+                ratio = (log_probs - sampled_log_probs_old).exp()
+                obj = ratio * sampled_advantages
+                obj_clipped = ratio.clamp(1.0 - self.config.ppo_ratio_clip,
+                                          1.0 + self.config.ppo_ratio_clip) * sampled_advantages
+                policy_loss = -torch.min(obj, obj_clipped).mean(0) \
+                    - config.entropy_weight * entropy_loss.mean()
+
+                value_loss = 0.5 * (sampled_returns - values).pow(2).mean()
+
+                self.network.zero_grad()
+                loss = policy_loss + value_loss
+                loss.backward()
+
+                # Update the temporary precision matrix
+                for n, p in self.params.items():
+                    precision_matrices[n].data += p.grad.data ** 2 / float(len(sampled_states))
+                    #precision_matrices[n].data += p.grad.data ** 2
+
+        for n, p in self.network.named_parameters():
+            if p.requires_grad is False: continue
+            # Update the precision matrix
+            self.precision_matrices[n] = config.cl_alpha*self.precision_matrices[n] + \
+                (1 - config.cl_alpha) * precision_matrices[n]
+            # Update the means
+            self.means[n] = deepcopy(p.data).to(config.DEVICE)
+
+        self.network.train()
+        # return task precision matrices and general precision matrices across tasks agent has
+        # been explosed to so far
+        return precision_matrices, self.precision_matrices
+
+    def iteration(self):
+        config = self.config
+        rollout = []
+        states = self.states
+        if self.curr_train_task_label is not None:
+            task_label = self.curr_train_task_label
+        else:
+            task_label = self.task.get_task()['task_label']
+            assert False, 'manually set (temporary) breakpoint. code should not get here.'
+
+        task_label = tensor(task_label)
+        batch_dim = config.num_workers
+        if batch_dim == 1:
+            batch_task_label = task_label.reshape(1, -1)
+        else:
+            batch_task_label = torch.repeat_interleave(task_label.reshape(1, -1), batch_dim, dim=0)
+
+        states, rollout = self._rollout_fn(states, batch_task_label)
+
+        self.states = states
+        pending_value = self.network.predict(states, task_label=batch_task_label)[-2]
+        rollout.append([states, pending_value, None, None, None, None])
+        processed_rollout = [None] * (len(rollout) - 1)
+        advantages = tensor(np.zeros((config.num_workers, 1)))
+        returns = pending_value.detach()
+        for i in reversed(range(len(rollout) - 1)):
+            states, value, actions, log_probs, rewards, terminals = rollout[i]
+            terminals = tensor(terminals).unsqueeze(1)
+            rewards = tensor(rewards).unsqueeze(1)
+            actions = tensor(actions)
+            states = tensor(states)
+            next_value = rollout[i + 1][1]
+            returns = rewards + config.discount * terminals * returns
+            if not config.use_gae:
+                advantages = returns - value.detach()
+            else:
+                td_error = rewards + config.discount*terminals*next_value.detach() - value.detach()
+                advantages = advantages * config.gae_tau * config.discount * terminals + td_error
+            processed_rollout[i] = [states, actions, log_probs, returns, advantages]
+
+        self.ewc_data_buffer.feed(processed_rollout)
+
+        states, actions, log_probs_old, returns, advantages = map(lambda x: torch.cat(x, dim=0), \
+            zip(*processed_rollout))
+        eps = 1e-6
+        advantages = (advantages - advantages.mean()) / (advantages.std() + eps)
+
+        grad_norm_log = []
+        policy_loss_log = []
+        value_loss_log = []
+        log_probs_log = []
+        entropy_log = []
+        ratio_log = []
+        weight_pres_loss_log = []
+        batcher = Batcher(states.size(0) // config.num_mini_batches, [np.arange(states.size(0))])
+        for _ in range(config.optimization_epochs):
+            batcher.shuffle()
+            while not batcher.end():
+                batch_indices = batcher.next_batch()[0]
+                batch_indices = tensor(batch_indices).long()
+                sampled_states = states[batch_indices]
+                sampled_actions = actions[batch_indices]
+                sampled_log_probs_old = log_probs_old[batch_indices]
+                sampled_returns = returns[batch_indices]
+                sampled_advantages = advantages[batch_indices]
+
+                batch_dim = sampled_states.shape[0]
+                batch_task_label = torch.repeat_interleave(task_label.reshape(1, -1), batch_dim, \
+                    dim=0)
+                _, _, log_probs, entropy_loss, values, outs = self.network.predict(sampled_states, \
+                    sampled_actions, task_label=batch_task_label, return_layer_output=True)
+                ratio = (log_probs - sampled_log_probs_old).exp()
+                obj = ratio * sampled_advantages
+                obj_clipped = ratio.clamp(1.0 - self.config.ppo_ratio_clip,
+                                          1.0 + self.config.ppo_ratio_clip) * sampled_advantages
+                policy_loss = -torch.min(obj, obj_clipped).mean(0) \
+                    - config.entropy_weight * entropy_loss.mean()
+
+                value_loss = 0.5 * (sampled_returns - values).pow(2).mean()
+
+                weight_pres_loss = self.penalty()
+
+                log_probs_log.append(log_probs.detach().cpu().numpy().mean())
+                entropy_log.append(entropy_loss.detach().cpu().numpy().mean())
+                ratio_log.append(ratio.detach().cpu().numpy().mean())
+                policy_loss_log.append(policy_loss.detach().cpu().numpy())
+                value_loss_log.append(value_loss.detach().cpu().numpy())
+                weight_pres_loss_log.append(weight_pres_loss.detach().cpu().numpy())
+
+                self.opt.zero_grad()
+                (policy_loss + value_loss + weight_pres_loss).backward()
+                norm_ = nn.utils.clip_grad_norm_(self.network.parameters(), config.gradient_clip)
+                grad_norm_log.append(norm_.detach().cpu().numpy())
+                self.opt.step()
+
+        steps = config.rollout_length * config.num_workers
+        self.total_steps += steps
+        self.layers_output = outs
+        return {'grad_norm': grad_norm_log, 'policy_loss': policy_loss_log, \
+            'value_loss': value_loss_log, 'log_prob': log_probs_log, 'entropy': entropy_log, \
+            'ppo_ratio': ratio_log, 'preservation_loss': weight_pres_loss_log}
+

@@ -96,6 +96,9 @@ def _itr_log_mw(logger, agent, iteration, dict_logs):
 def run_iterations_w_oracle(agent, tasks_info):
     config = agent.config
 
+    log_path_pm = config.log_dir + '/pm'
+    if not os.path.exists(log_path_pm):
+        os.makedirs(log_path_pm)
     log_path_tstats = config.log_dir + '/task_stats'
     if not os.path.exists(log_path_tstats):
         os.makedirs(log_path_tstats)
@@ -193,19 +196,27 @@ def run_iterations_w_oracle(agent, tasks_info):
                 # check whether task training has been completed
                 task_steps_limit = config.max_steps * (num_tasks * learn_block_idx + task_idx + 1)
                 if config.max_steps and agent.total_steps >= task_steps_limit:
+                    if agent_name != 'BaselineAgent':
+                        config.logger.info('cacheing mask for current task')
+
+                    ret = agent.task_train_end()
+
                     with open(log_path_tstats + '/%s-%s-online-stats-%s-run-%d-task-%d.bin' % \
                         (agent_name, config.tag, agent.task.name, learn_block_idx+1, task_idx+1), 'wb') as f:
                         pickle.dump({'rewards': rewards[task_start_idx : ], \
                         'steps': steps[task_start_idx : ]}, f)
-
-                    if agent_name != 'BaselineAgent':
-                        config.logger.info('cacheing mask for current task')
-                    ret = agent.task_train_end()
                     agent.save(log_path_tstats +'/%s-%s-model-%s-run-%d-task-%d.bin' % (agent_name, \
                         config.tag, agent.task.name, learn_block_idx+1, task_idx+1))
                     agent.save(config.log_dir + '/%s-%s-model-%s.bin' % (agent_name, config.tag, \
                         agent.task.name))
                     task_start_idx = len(rewards)
+
+                    with open(log_path_pm + '/%s-%s-precision-matrices-%s-run-%d-task-%d.bin' % \
+                        (agent_name, config.tag, agent.task.name, learn_block_idx+1, task_idx+1), 'wb') as f:
+                        pickle.dump(ret[0], f)
+                    with open(log_path_pm + '/%s-%s-precision-matrices-movavg-%s-run-%d-task-%d.bin' % \
+                        (agent_name, config.tag, agent.task.name, learn_block_idx+1, task_idx+1), 'wb') as f:
+                        pickle.dump(ret[1], f)
                     break
             # end of while True. current task training
             # evaluate agent across task exposed to agent so far

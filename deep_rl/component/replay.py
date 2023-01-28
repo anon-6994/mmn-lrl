@@ -43,3 +43,27 @@ class Replay:
     def clear(self):
         self.data.clear()
         self.pos = 0
+
+class IterableReplay(Replay):
+    def __init__(self, memory_size, batch_size=1024):
+        super(IterableReplay, self).__init__(memory_size, batch_size)
+        self.itr_counter = 0
+
+    def feed(self, experience):
+        if self.pos >= len(self.data):
+            self.data.append(experience)
+        else:
+            self.data[self.pos] = experience
+        self.pos = (self.pos + 1) % self.memory_size
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.itr_counter < len(self.data):
+            data = self.data[self.itr_counter]
+            self.itr_counter += 1
+            return data
+        else:
+            self.itr_counter = 0 # reset counter
+            raise StopIteration

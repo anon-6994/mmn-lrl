@@ -170,6 +170,32 @@ class ActorCriticNetSS(nn.Module):
 
         self.phi_params = [p for p in self.phi_body.parameters() if p.requires_grad is True]
 
+class ActorCriticNetMultiHead(nn.Module):
+    def __init__(self, state_dim, action_dim, phi_body, actor_body, critic_body, num_tasks):
+        super(ActorCriticNetMultiHead, self).__init__()
+        if phi_body is None: phi_body = DummyBody(state_dim)
+        if actor_body is None: actor_body = DummyBody(phi_body.feature_dim)
+        if critic_body is None: critic_body = DummyBody(phi_body.feature_dim)
+        self.phi_body = phi_body
+        self.actor_body = actor_body
+        self.critic_body = critic_body
+
+        self.fc_action = layer_init(nn.Linear(actor_body.feature_dim, action_dim), 1e-3)
+        self.fc_critic = layer_init(nn.Linear(critic_body.feature_dim, 1), 1e-3)
+        for i in range(num_tasks):
+            setattr(self, 'fc_action_head_{0}'.format(i), \
+                layer_init(nn.Linear(actor_body.feature_dim, action_dim), 1e-3))
+            setattr(self, 'fc_critic_head_{0}'.format(i), \
+                layer_init(nn.Linear(critic_body.feature_dim, 1), 1e-3))
+
+        self.actor_params = list(self.actor_body.parameters())
+        self.critic_params = list(self.critic_body.parameters())
+        self.phi_params = list(self.phi_body.parameters())
+
+        for i in range(num_tasks):
+            self.actor_params += list((getattr(self, 'fc_action_head_{0}'.format(i))).parameters())
+            self.critic_params += list((getattr(self, 'fc_critic_head_{0}'.format(i))).parameters())
+
 class DeterministicActorCriticNet(nn.Module, BaseNet):
     def __init__(self,
                  state_dim,
@@ -340,6 +366,82 @@ class GaussianActorCriticNet_CL(nn.Module, BaseNet):
         entropy = entropy.sum(-1).unsqueeze(-1)
         return mean, action, log_prob, entropy, v, layers_output
 
+class GaussianActorCriticNet_CL_MultiHead(nn.Module, BaseNet):
+    LOG_STD_MIN = -0.6931 #-20.
+    LOG_STD_MAX = 0.4055 #1.3
+    def __init__(self,
+                 state_dim,
+                 action_dim,
+                 num_tasks,
+                 task_label_dim=None,
+                 phi_body=None,
+                 actor_body=None,
+                 critic_body=None):
+        super(GaussianActorCriticNet_CL_MultiHead, self).__init__()
+        self.network = ActorCriticNetMultiHead(state_dim, action_dim, phi_body, actor_body, \
+            critic_body, num_tasks)
+        self.task_label_dim = task_label_dim
+
+        for i in range(num_tasks):
+            setattr(self.network, 'fc_log_std_head_{0}'.format(i), \
+                layer_init(nn.Linear(self.network.actor_body.feature_dim, action_dim), 1e-3))
+        for i in range(num_tasks):
+            _layer = getattr(self.network, 'fc_log_std_head_{0}'.format(i))
+            tmp = [p for p in  _layer.parameters() if p.requires_grad is True]
+            self.network.actor_params += tmp
+
+        self.to(Config.DEVICE)
+        self.task_mapper = []
+
+    def _task_label_to_id(self, task_label):
+        for idx, _task_label in enumerate(self.task_mapper):
+            if torch.equal(task_label, _task_label):
+                return idx
+        self.task_mapper.append(task_label)
+        task_id = len(self.task_mapper) - 1
+        print('task_label:', task_label)
+        print('mapper:', self.task_mapper)
+        print('task_id:', task_id)
+        return task_id
+
+    def predict(self, obs, action=None, task_label=None, return_layer_output=False, to_numpy=False):
+        obs = tensor(obs)
+        if task_label is not None and not isinstance(task_label, torch.Tensor):
+            task_label = tensor(task_label)
+
+        task_id = self._task_label_to_id(task_label[0])
+
+        layers_output = []
+        phi, out = self.network.phi_body(obs, task_label, return_layer_output, 'network.phi_body')
+        layers_output += out
+        phi_a, out = self.network.actor_body(phi, None, return_layer_output, 'network.actor_body')
+        layers_output += out
+        phi_v, out = self.network.critic_body(phi, None, return_layer_output, 'network.critic_body')
+        layers_output += out
+
+        _layer_actor = getattr(self.network, 'fc_action_head_{0}'.format(task_id))
+        _layer_critic = getattr(self.network, 'fc_critic_head_{0}'.format(task_id))
+        _layer_log_std = getattr(self.network, 'fc_log_std_head_{0}'.format(task_id))
+        mean = _layer_actor(phi_a)
+        if to_numpy:
+            return mean.cpu().detach().numpy()
+        v = _layer_critic(phi_v)
+        log_std = _layer_log_std(phi_a)
+        log_std = torch.clamp(log_std, GaussianActorCriticNet_CL_MultiHead.LOG_STD_MIN, \
+            GaussianActorCriticNet_CL_MultiHead.LOG_STD_MAX)
+        std = torch.exp(log_std)
+        dist = torch.distributions.Normal(mean, std)
+        if action is None:
+            action = dist.sample()
+        if return_layer_output:
+            layers_output += [('policy_mean', mean), ('policy_std', std), \
+                ('policy_action', action), ('value_fn', v)]
+        log_prob = dist.log_prob(action)
+        log_prob = torch.sum(log_prob, dim=1, keepdim=True)
+        entropy = dist.entropy()
+        entropy = entropy.sum(-1).unsqueeze(-1)
+        return mean, action, log_prob, entropy, v, layers_output
+
 class CategoricalActorCriticNet(nn.Module, BaseNet):
     def __init__(self,
                  state_dim,
@@ -431,6 +533,61 @@ class CategoricalActorCriticNet_CL(nn.Module, BaseNet):
 
         logits = self.network.fc_action(phi_a)
         v = self.network.fc_critic(phi_v)
+        dist = torch.distributions.Categorical(logits=logits)
+        if action is None:
+            action = dist.sample()
+        if return_layer_output:
+            layers_output += [('policy_logits', logits), ('policy_action', action), ('value_fn', v)]
+        log_prob = dist.log_prob(action).unsqueeze(-1)
+        return logits, action, log_prob, dist.entropy().unsqueeze(-1), v, layers_output
+
+class CategoricalActorCriticNet_CL_MultiHead(nn.Module, BaseNet):
+    def __init__(self,
+                 state_dim,
+                 action_dim,
+                 num_tasks,
+                 task_label_dim=None,
+                 phi_body=None,
+                 actor_body=None,
+                 critic_body=None):
+        super(CategoricalActorCriticNet_CL_MultiHead, self).__init__()
+        self.network = ActorCriticNetMultiHead(state_dim, action_dim, phi_body, actor_body, \
+            critic_body, num_tasks)
+        self.task_label_dim = task_label_dim
+        self.to(Config.DEVICE)
+        self.task_mapper = []
+
+    def _task_label_to_id(self, task_label):
+        for idx, _task_label in enumerate(self.task_mapper):
+            if torch.equal(task_label, _task_label):
+                return idx
+        self.task_mapper.append(task_label)
+        task_id = len(self.task_mapper) - 1
+        print('task_label:', task_label)
+        print('mapper:', self.task_mapper)
+        print('task_id:', task_id)
+        return task_id
+        
+
+    def predict(self, obs, action=None, task_label=None, return_layer_output=False):
+        obs = tensor(obs)
+        if task_label is not None and not isinstance(task_label, torch.Tensor):
+            task_label = tensor(task_label)
+
+        task_id = self._task_label_to_id(task_label[0])
+
+        layers_output = []
+        phi, out = self.network.phi_body(obs, task_label, return_layer_output, 'network.phi_body')
+        layers_output += out
+        phi_a, out = self.network.actor_body(phi, None, return_layer_output, 'network.actor_body')
+        layers_output += out
+        phi_v, out = self.network.critic_body(phi, None, return_layer_output, 'network.critic_body')
+        layers_output += out
+
+        _actor = getattr(self.network, 'fc_action_head_{0}'.format(task_id))
+        _critic = getattr(self.network, 'fc_critic_head_{0}'.format(task_id))
+        logits = _actor(phi_a)
+        v = _critic(phi_v)
         dist = torch.distributions.Categorical(logits=logits)
         if action is None:
             action = dist.sample()
