@@ -394,6 +394,9 @@ class MetaCTgraph(BaseTask):
             labels = labels.astype(np.float32) 
             for idx in range(len(self.tasks)):
                 self.tasks[idx]['task_label'] = labels[idx]
+
+        #_ste_task_idx = int(env_meta_config['ste_task_idx'])
+        #self.tasks = [self.tasks[_ste_task_idx]]
         if 'filter_tasks' in env_meta_config.keys():
             filtered_tasks = []
             for idx_ in env_meta_config['filter_tasks']:
@@ -512,6 +515,13 @@ class MiniGrid(BaseTask):
             labels = labels.astype(np.float32) 
             for idx in range(len(self.tasks)):
                 self.tasks[idx]['task_label'] = labels[idx]
+
+        if 'filter_tasks' in env_config.keys():
+            filtered_tasks = []
+            for idx_ in env_config['filter_tasks']:
+                filtered_tasks.append(self.tasks[idx_])
+            self.tasks_ = self.tasks
+            self.tasks = filtered_tasks
         # set default task
         self.current_task = self.tasks[0]
         self.env = self.envs[self.current_task['task']]
@@ -616,6 +626,13 @@ class ContinualWorld(BaseTask):
             labels = labels.astype(np.float32) 
             for idx in range(len(self.tasks)):
                 self.tasks[idx]['task_label'] = labels[idx]
+
+        if 'filter_tasks' in env_config.keys():
+            filtered_tasks = []
+            for idx_ in env_config['filter_tasks']:
+                filtered_tasks.append(self.tasks[idx_])
+            self.tasks_ = self.tasks
+            self.tasks = filtered_tasks
         # set default task
         self.current_task = self.tasks[0]
         self.env = self.envs[self.current_task['task']]

@@ -33,7 +33,8 @@ def ppo_baseline_mctgraph(name, args):
     config.cl_preservation = 'baseline'
     config.seed = args.seed
     random_seed(config.seed)
-    exp_id = '-{0}-{1}'.format(config.seed, args.exp_id)
+    exp_id = '-{0}-ste-task{1}-{2}'.format(config.seed, args.task_id, args.exp_id)
+    #exp_id = '-{0}-transition-interleaved-ste-task{1}'.format(config.seed, args.task_id)
     log_name = name + '-ppo' + '-' + config.cl_preservation + exp_id
     config.log_dir = get_default_log_dir(log_name)
     config.num_workers = 4
@@ -184,6 +185,7 @@ if __name__ == '__main__':
     parser.add_argument('--new_task_mask', help='', \
         default='random', type=str)
     parser.add_argument('--seed', help='seed for the experiment', default=8379, type=int)
+    parser.add_argument('--task_id', help='id of task', default=None, type=int)
     args = parser.parse_args()
 
     if args.env_name == 'ctgraph':

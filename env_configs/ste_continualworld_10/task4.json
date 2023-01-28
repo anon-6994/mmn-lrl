@@ -1,0 +1,6 @@
+{
+"tasks": ["stick-pull-v2"],
+"one_hot": true,
+"label_dim": 10,
+"randomization": "deterministic"
+}

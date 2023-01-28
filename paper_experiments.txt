@@ -1,54 +1,57 @@
 # CT8
-# ppo
-python train_ctgraph.py baseline --seed 86 --env_config_path env_configs/ct8.json --exp_id ct8
-
-# mask ri
- python train_ctgraph.py ll_supermask --new_task_mask random --seed 86 --env_config_path env_configs/ct8.json --exp_id ct8
-
-# mask lc (runs as mask blc in exp_maskblc branch)
-python train_ctgraph.py ll_supermask --new_task_mask linear_comb --seed 86 --env_config_path env_configs/ct8.json --exp_id ct8
-
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task0.json --seed 86 --task_id 0 --exp_id ct8
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task1.json --seed 86 --task_id 1 --exp_id ct8
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task2.json --seed 86 --task_id 2 --exp_id ct8
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task3.json --seed 86 --task_id 3 --exp_id ct8
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task4.json --seed 86 --task_id 4 --exp_id ct8
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task5.json --seed 86 --task_id 5 --exp_id ct8
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task6.json --seed 86 --task_id 6 --exp_id ct8
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8/task7.json --seed 86 --task_id 7 --exp_id ct8
 
 # CT12
-# ppo
-python train_ctgraph.py baseline --seed 86 --env_config_path env_configs/ct12.json --exp_id ct12
-
-# mask ri
-python train_ctgraph.py ll_supermask --new_task_mask random --seed 86 --env_config_path env_configs/ct12.json --exp_id ct12
-
-# mask lc (runs as mask blc in exp_maskblc branch)
-python train_ctgraph.py ll_supermask --new_task_mask linear_comb --seed 86 --env_config_path env_configs/ct12.json --exp_id ct12
-
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task0.json --seed 86 --task_id 0 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task1.json --seed 86 --task_id 1 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task2.json --seed 86 --task_id 2 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task3.json --seed 86 --task_id 3 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task4.json --seed 86 --task_id 4 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task5.json --seed 86 --task_id 5 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task6.json --seed 86 --task_id 6 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task7.json --seed 86 --task_id 7 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task8.json --seed 86 --task_id 8 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task9.json --seed 86 --task_id 9 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task10.json --seed 86 --task_id 10 --exp_id ct12
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct12/task11.json --seed 86 --task_id 11 --exp_id ct12
 
 # CT8 MULTI DEPTH
-# ppo
-python train_ctgraph.py baseline --seed 86 --env_config_path env_configs/ct8_md.json --exp_id ct8md
-
-# mask ri
-python train_ctgraph.py ll_supermask --new_task_mask random --seed 86 --env_config_path env_configs/ct8_md.json --exp_id ct8md
-
-# mask lc (runs as mask blc in exp_maskblc branch)
-python train_ctgraph.py ll_supermask --new_task_mask linear_comb --seed 86 --env_config_path env_configs/ct8_md.json --exp_id ct8md
-
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task0.json --seed 86 --task_id 0 --exp_id ct8md
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task1.json --seed 86 --task_id 1 --exp_id ct8md
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task2.json --seed 86 --task_id 2 --exp_id ct8md
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task3.json --seed 86 --task_id 3 --exp_id ct8md
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task4.json --seed 86 --task_id 4 --exp_id ct8md
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task5.json --seed 86 --task_id 5 --exp_id ct8md
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task6.json --seed 86 --task_id 6 --exp_id ct8md
+python train_ctgraph.py baseline --env_config_path ./env_configs/ste_ct8_md/task7.json --seed 86 --task_id 7 --exp_id ct8md
 
 # MG10
-# ppo
-python train_minigrid.py baseline --seed 86
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task0.json --seed 86 --task_id 0
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task1.json --seed 86 --task_id 1
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task2.json --seed 86 --task_id 2
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task3.json --seed 86 --task_id 3
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task4.json --seed 86 --task_id 4
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task5.json --seed 86 --task_id 5
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task6.json --seed 86 --task_id 6
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task7.json --seed 86 --task_id 7
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task8.json --seed 86 --task_id 8
+python train_minigrid.py baseline --env_config_path ./env_configs/ste_minigrid_10/task9.json --seed 86 --task_id 9
 
-# mask ri
-python train_minigrid.py ll_supermask --new_task_mask random --seed 86
-
-# mask lc (runs as mask blc in exp_maskblc branch)
-python train_minigrid.py ll_supermask --new_task_mask linear_comb --seed 86
-
-
-#CW10
-# ppo
-python train_continualworld.py baseline --seed 436
-
-# mask ri (for continuous values mask setup). For binary mask, run the command in ‘exp_maskri_discrete_mask_cw10’ branch
-python train_continualworld.py ll_supermask --new_task_mask random --seed 436
-
-# mask lc (for continuous values mask setup). (runs as mask blc in exp_maskblc branch)
-# *no need* to run this in ‘exp_maskri_discrete_mask_cw10’ branch
-python train_continualworld.py ll_supermask --new_task_mask linear_comb --seed 436
+# CW10
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task0.json --seed 436 --task_id 0
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task1.json --seed 436 --task_id 1
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task2.json --seed 436 --task_id 2
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task3.json --seed 436 --task_id 3
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task4.json --seed 436 --task_id 4
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task5.json --seed 436 --task_id 5
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task6.json --seed 436 --task_id 6
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task7.json --seed 436 --task_id 7
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task8.json --seed 436 --task_id 8
+python train_continualworld.py baseline --env_config_path ./env_configs/ste_continualworld_10/task9.json --seed 436 --task_id 9

@@ -33,7 +33,7 @@ def ppo_baseline_minigrid(name, args):
     config.cl_preservation = 'baseline'
     config.seed = args.seed
     random_seed(config.seed)
-    exp_id = '-{0}'.format(config.seed)
+    exp_id = '-{0}-ste-task{1}'.format(config.seed, args.task_id)
     log_name = name + '-ppo' + '-' + config.cl_preservation + exp_id
     config.log_dir = get_default_log_dir(log_name)
     config.num_workers = 4
@@ -41,7 +41,10 @@ def ppo_baseline_minigrid(name, args):
     # get num_tasks from env_config
     with open(env_config_path, 'r') as f:
         env_config_ = json.load(f)
-    num_tasks = len(env_config_['tasks'])
+    if 'filter_tasks' in env_config_.keys():
+        num_tasks = len(env_config_['filter_tasks'])
+    else:
+        num_tasks = len(env_config_['tasks'])
     del env_config_
 
     task_fn = lambda log_dir: MiniGridFlatObs(name, env_config_path, log_dir, config.seed, False)
@@ -187,6 +190,7 @@ if __name__ == '__main__':
     parser.add_argument('--new_task_mask', help='', \
         default='random', type=str)
     parser.add_argument('--seed', help='seed for experiment', default=54741, type=int)
+    parser.add_argument('--task_id', help='id of task', default=None, type=int)
     args = parser.parse_args()
 
     if args.env_name == 'minigrid':
